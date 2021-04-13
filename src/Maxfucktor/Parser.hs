@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections #-}
 
 
-module Maxfucktor.Parser where
+module Maxfucktor.Parser (AST(..), wholeProgram, Parser(runParser)) where
 
 
 import Control.Applicative ( Alternative(some, many, (<|>)) )
@@ -64,8 +64,8 @@ instance Alternative (Parser input) where
           Nothing -> runParser p1 input
 
 
-p :: (a -> Bool) -> Parser a a
-p f = 
+predicate :: (a -> Bool) -> Parser a a
+predicate f = 
   Parser $ \input ->
     let fail = (Nothing, input) in
     if null input
@@ -79,10 +79,10 @@ p f =
 -- BF loop [%code-here%]
 loopBody :: Parser Char AST
 loopBody = do
-  p (== '[')
-  match <- many code
-  p (== ']')
-  return $ Loop match
+  predicate (== '[')
+  matched_code <- many code
+  predicate (== ']')
+  return $ Loop matched_code
 
 
 -- any BF code
@@ -90,7 +90,7 @@ code :: Parser Char AST
 code =
   foldl (<|>) loopBody $
   map 
-    (\(sym, ast) -> ast . length <$> some (p (== sym)))
+    (\(sym, ast) -> ast . length <$> some (predicate (== sym)))
     [
       ('+', Inc),
       ('-', Dec),
