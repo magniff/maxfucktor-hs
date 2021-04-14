@@ -1,1 +1,1 @@
-# hask
+# Maxfucktor-hs

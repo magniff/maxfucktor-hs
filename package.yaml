@@ -23,7 +23,6 @@ dependencies:
 - base >= 4.7 && < 5
 - mtl
 - containers
-- heterocephalus
 
 library:
   source-dirs: src
