@@ -1,4 +1,4 @@
---{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 module Maxfucktor.Generator (renderProgram) where
 
 
@@ -9,8 +9,8 @@ import Control.Monad.State (State, get, put, evalState)
 type Strings = [[Char]]
 
 
-data Op = Add | Sub deriving Eq
-newtype BlockId = BlockId Int
+data Op = Add | Sub deriving (Eq, Show)
+newtype BlockId = BlockId Int deriving Eq
 
 
 nextContid :: BlockId -> BlockId
@@ -30,6 +30,8 @@ renderNode node =
             return ["sub byte [rsi], byte " ++ show rep]
         Opt.GoRight rep ->
             return ["add rsi, " ++ show rep]
+        Opt.GoLeft  rep ->
+            return ["sub rsi, " ++ show rep]
         Opt.Output  rep ->
             return $
             concat
@@ -56,7 +58,7 @@ renderNode node =
                 ["mov [rsi], byte 0"] ++
                 footer
             where
-                toASMBlock shift mul = 
+                toASMBlock mul shift = 
                     ["movzx rax, byte [rsi]"] ++
                     (
                         if mul > 1
@@ -79,12 +81,18 @@ renderNode node =
                 current_id <- get
                 put $ nextContid current_id
                 return $ renderSubAdd value current_id Sub
+        Opt.Drop ->
+            return
+            [
+                "mov byte [rsi], byte 0"
+            ]
         Opt.Loop nodes ->
             do
                 this_id <- get
                 put $ nextContid this_id
                 cont_id <- get
-                innerNodesCode <- sequence $ map renderNode nodes
+                put $ nextContid cont_id
+                innerNodesCode <- sequence $ fmap renderNode nodes
                 return $ initLoop this_id cont_id ++ concat innerNodesCode ++ loopBack this_id cont_id
             where
                 initLoop this_id cont_id = [
@@ -117,5 +125,5 @@ renderNode node =
 
 renderProgram :: [Opt.AST] -> Strings
 renderProgram nodes = 
-    let code = concat $ evalState (sequence $ map renderNode nodes) (BlockId 0) in
-        code ++ ["jump exit"]
+    let code = concat $ evalState (mapM renderNode nodes) (BlockId 1) in
+        code ++ ["jmp exit"]
