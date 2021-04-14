@@ -2,7 +2,7 @@
 ## What
 A dead simple BF compiler written this time in Haskell.
 ## How
-In the project's root you will find a `build.sh` script, that being invoked first builds compiler itself and then immediatelly shoves provided BF source to it.
+In the project's root you will find a `build.sh` script, that being invoked first builds the compiler itself and then immediatelly shoves provided BF source into it.
 ```bash
 >> ./build.sh bf_src/helloworld.b
 >> ./helloworld.b.exe 
