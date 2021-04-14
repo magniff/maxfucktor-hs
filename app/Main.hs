@@ -7,6 +7,7 @@ module Main where
 import System.Environment ( getArgs )
 import Maxfucktor.Parser ( wholeProgram, Parser(runParser) )
 import Maxfucktor.Optimizer ( optimize )
+import Maxfucktor.Generator ( renderProgram )
 
 
 main :: IO ()

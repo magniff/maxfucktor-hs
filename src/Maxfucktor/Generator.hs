@@ -1,5 +1,5 @@
 --{-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
-module Maxfucktor.Generator where
+module Maxfucktor.Generator (renderProgram) where
 
 
 import qualified Maxfucktor.Optimizer as Opt
@@ -10,28 +10,18 @@ type Strings = [[Char]]
 
 
 data Op = Add | Sub deriving Eq
-data ContID = Local Int | Global
+newtype BlockId = BlockId Int
 
 
-initId :: ContID
-initId = Local 0
+nextContid :: BlockId -> BlockId
+nextContid (BlockId value) = BlockId $ value + 1
 
 
-nextContid :: ContID -> ContID
-nextContid cont_id =
-    case cont_id of
-        Local value -> Local $ value + 1
-        Global -> error "Oooops, should not be there!"
+showContid :: BlockId -> String
+showContid (BlockId value) = "l" ++ show value
 
 
-showContid :: ContID -> String
-showContid cont_id = 
-    case cont_id of
-        Global -> "exit"
-        Local value -> "l" ++ show value
-
-
-renderNode :: Opt.AST -> State ContID Strings
+renderNode :: Opt.AST -> State BlockId Strings
 renderNode node =
     case node of
         Opt.Inc rep ->
@@ -94,7 +84,8 @@ renderNode node =
                 this_id <- get
                 put $ nextContid this_id
                 cont_id <- get
-                undefined 
+                innerNodesCode <- sequence $ map renderNode nodes
+                return $ initLoop this_id cont_id ++ concat innerNodesCode ++ loopBack this_id cont_id
             where
                 initLoop this_id cont_id = [
                     showContid this_id ++ ":",
@@ -103,24 +94,11 @@ renderNode node =
                     ]
                 loopBack this_id cont_id = [
                     "jmp " ++ showContid this_id,
-                    show cont_id ++ ":"
+                    showContid cont_id ++ ":"
                     ]
                 jump target_id = ["jmp " ++ showContid target_id ]
--- def visit_Loop(node: Loop, cont_id: Optional[str] = None) -> VisitorOutput:
---     this_id = next(ids)
---     cont_id = cont_id or next(ids)
-
---     if cont_id != GLOBAL_EXIT:
---         yield CommandInitLoop(this_id=this_id, cont_id=cont_id)  # type: ignore
---     for subnode in node.contains:
---         yield from visit(subnode, cont_id=None)
---     if cont_id != GLOBAL_EXIT:
---         yield CommandLoopBack(this_id=this_id, cont_id=cont_id)  # type: ignore
---     else:
---         yield CommandJump(target_id=GLOBAL_EXIT)
-
     where
-        renderSubAdd :: Int -> ContID -> Op -> Strings
+        renderSubAdd :: Int -> BlockId -> Op -> Strings
         renderSubAdd shift cont_id op =
             let opRepr = if op == Add then "add" else "sub" in
             let header = [";;; start Add block"] in
@@ -136,5 +114,8 @@ renderNode node =
                 ] ++
                 footer
 
-renderProgram :: Opt.AST -> Strings
-renderProgram node = evalState (renderNode node) Global
+
+renderProgram :: [Opt.AST] -> Strings
+renderProgram nodes = 
+    let code = concat $ evalState (sequence $ map renderNode nodes) (BlockId 0) in
+        code ++ ["jump exit"]
