@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a757f58240d14e2a62958b7fef663e45dc45fe367a4506081b6810c4ce60ca8c
+-- hash: ad3e961692e3e92753e184e3a16e71e315016f5c8db2ebc07b9cb1d8fdcb231c
 
 name:           hask
 version:        0.1.0.0
@@ -37,7 +37,6 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
-    , heterocephalus
     , mtl
   default-language: Haskell2010
 
@@ -52,7 +51,6 @@ executable hask-exe
       base >=4.7 && <5
     , containers
     , hask
-    , heterocephalus
     , mtl
   default-language: Haskell2010
 
@@ -68,6 +66,5 @@ test-suite hask-test
       base >=4.7 && <5
     , containers
     , hask
-    , heterocephalus
     , mtl
   default-language: Haskell2010
