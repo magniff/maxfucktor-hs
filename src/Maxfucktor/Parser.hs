@@ -46,6 +46,10 @@ instance Applicative (Parser input) where
           )
 
 
+punit :: Parser Char ()
+punit = return ()
+
+
 instance Monad (Parser input) where
   pa >>= f =
     Parser $ \input ->
@@ -104,10 +108,11 @@ code =
 noLeftOvers :: Eq b => Parser a b -> Parser a b
 noLeftOvers p=
   Parser $ \input ->
-    let res@(inner_result, leftover) = runParser p input in
+    let success@(inner_result, leftover) = runParser p input in
+      let fail = (Nothing, leftover) in
       if isJust inner_result && null leftover
-        then res
-        else (Nothing, leftover)
+        then success
+        else fail
 
 
 wholeProgram :: Parser Char [AST]

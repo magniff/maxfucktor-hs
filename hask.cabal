@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 45a6c50862a6eaec6aab32b25055676e2f3b276f48c40ae91beb22425c5ca09a
+-- hash: a757f58240d14e2a62958b7fef663e45dc45fe367a4506081b6810c4ce60ca8c
 
 name:           hask
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Maxfucktor.Generator
       Maxfucktor.Optimizer
       Maxfucktor.Parser
   other-modules:
@@ -36,6 +37,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , heterocephalus
     , mtl
   default-language: Haskell2010
 
@@ -50,6 +52,7 @@ executable hask-exe
       base >=4.7 && <5
     , containers
     , hask
+    , heterocephalus
     , mtl
   default-language: Haskell2010
 
@@ -65,5 +68,6 @@ test-suite hask-test
       base >=4.7 && <5
     , containers
     , hask
+    , heterocephalus
     , mtl
   default-language: Haskell2010

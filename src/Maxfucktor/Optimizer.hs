@@ -33,6 +33,7 @@ optimize astnode =
             [P.Dec 1, P.GoRight p0, P.Inc p1, P.GoRight p2, P.Inc p3, P.GoLeft p4]
             | p0 + p2 == p4 ->
             Mul p0 (p0+p2) p1 p3
+        P.Loop [P.Dec value] | value > 0 -> Drop
         P.Loop contents -> Loop $ map optimize contents
         P.Inc     value -> Inc value
         P.Dec     value -> Dec value
