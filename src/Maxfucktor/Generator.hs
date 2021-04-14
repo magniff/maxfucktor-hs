@@ -92,7 +92,7 @@ renderNode node =
                 put $ nextContid this_id
                 cont_id <- get
                 put $ nextContid cont_id
-                innerNodesCode <- sequence $ fmap renderNode nodes
+                innerNodesCode <- mapM renderNode nodes
                 return $ initLoop this_id cont_id ++ concat innerNodesCode ++ loopBack this_id cont_id
             where
                 initLoop this_id cont_id = [
