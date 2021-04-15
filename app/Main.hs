@@ -31,12 +31,12 @@ main =
   do
     args <- getArgs
     datum <- readFile $ head args
-    let filtered = filter (`elem` "<>.,[]+-") datum
-     in case runParser wholeProgram filtered of
-          (Nothing, leftover) ->
-            print $ "NoParser error occured, unable to process: " ++ leftover
-          (Just ast, _) ->
-            let opt_ast = map optimize ast
-             in putStr $
-              intercalate "\n" programHeader ++
-              (intercalate "\n" (renderProgram opt_ast) ++ "\n")
+    let filtered = filter (`elem` "<>.,[]+-") datum in
+      case runParser wholeProgram filtered of
+        (Nothing, leftover) ->
+          print $ "NoParser error occured, unable to process: " ++ leftover
+        (Just ast, _) ->
+          let opt_ast = map optimize ast
+            in putStr $
+            intercalate "\n" programHeader ++
+            (intercalate "\n" (renderProgram opt_ast) ++ "\n")
