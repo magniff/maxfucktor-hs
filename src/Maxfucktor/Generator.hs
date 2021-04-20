@@ -22,7 +22,10 @@ instance Show BId where
 
 
 instance Enum BId where
+    toEnum = BId
+    fromEnum (BId a) = a
     succ (BId value) = BId $ succ value
+    pred (BId value) = BId (if value /= 0 then pred value else 0)
 
 
 -- Converts a single "optimized" AST node into ASM code building action
@@ -81,7 +84,7 @@ renderNode node =
                 -- call the 'next' function
                 current_id <- get
                 put $ succ current_id
-                -- end of 'next' invocation
+                -- end of the 'next' invocation
                 return $ renderSubAdd value current_id OpAdd
         Sub value ->
             do
@@ -99,14 +102,13 @@ renderNode node =
             do
                 -- call the 'next' function twice
                 thisId <- get
-                put $ succ thisId
-                contId <- get
+                let contId = succ thisId
                 put $ succ contId
-                -- end of 'next' invocations
+                -- end of the 'next' invocations
                 innerNodesCode <- mapM renderNode nodes
                 return $
                   initLoop thisId contId ++ -- loop initialization code
-                  concat innerNodesCode    ++ -- code for the loop body itself
+                  concat innerNodesCode  ++ -- code for the loop body itself
                   loopBack thisId contId    -- loop back code
             where
                 initLoop thisId contId = [
@@ -139,5 +141,5 @@ renderNode node =
 
 renderProgram :: [AST Optimized] -> Strings
 renderProgram nodes = 
-    let code = concat $ evalState (mapM renderNode nodes) (BId 1) in
+    let code = concat $ evalState (mapM renderNode nodes) (BId 0) in
         code ++ ["jmp exit"]
