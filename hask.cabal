@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ad3e961692e3e92753e184e3a16e71e315016f5c8db2ebc07b9cb1d8fdcb231c
+-- hash: c13494408cf3a7e6a3aaf8fd23efc2562a3a1ff84f36367697754fc0a9d64531
 
 name:           hask
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Maxfucktor.AST
       Maxfucktor.Generator
       Maxfucktor.Optimizer
       Maxfucktor.Parser

@@ -1,25 +1,17 @@
 {-# LANGUAGE TupleSections #-}
 
 
-module Maxfucktor.Parser (AST(..), wholeProgram, Parser(runParser)) where
+module Maxfucktor.Parser (wholeProgram, Parser(runParser)) where
 
 
 import Control.Applicative ( Alternative(some, many, (<|>)) )
 import Data.Maybe ( isJust )
 
 
+import Maxfucktor.AST
+
+
 type Predicate a = a -> Bool
-
-
-data AST = 
-    Inc     Int
-  | Dec     Int
-  | GoLeft  Int
-  | GoRight Int
-  | Input   Int
-  | Output  Int
-  | Loop    [AST]
-  deriving (Show, Eq)
 
 
 -- i : input type
@@ -80,7 +72,7 @@ predicate f =
 
 
 -- BF loop [%code-here%]
-loopBody :: Parser Char AST
+loopBody :: Parser Char (AST UnOptimized )
 loopBody = do
   predicate (== '[')
   matched_code <- many code
@@ -89,7 +81,7 @@ loopBody = do
 
 
 -- any BF code
-code :: Parser Char AST
+code :: Parser Char (AST UnOptimized)
 code =
   foldl (<|>) loopBody $
   map 
@@ -114,5 +106,5 @@ noLeftOvers p=
         else fail
 
 
-wholeProgram :: Parser Char [AST]
+wholeProgram :: Parser Char [AST UnOptimized ]
 wholeProgram = noLeftOvers $ many code

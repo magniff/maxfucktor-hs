@@ -2,48 +2,48 @@
 module Maxfucktor.Generator (renderProgram) where
 
 
-import qualified Maxfucktor.Optimizer as Opt
+import Maxfucktor.AST
 import Control.Monad.State (State, get, put, evalState)
 
 
+-- The list of strings type
 type Strings = [[Char]]
 
 
-data Op = Add | Sub deriving (Eq, Show)
+data Op = OpAdd | OpSub deriving (Eq, Show)
 
 
 -- This type is used to enumerate lables in resulting ASM code
 newtype BId = BId Int deriving Eq
 
 
--- It might be a good idea to implement the "Enum BId" instead of this
-nextContid :: BId -> BId
-nextContid (BId value) = BId $ value + 1
-
-
 instance Show BId where
     show (BId value) = "l" ++ show value 
 
 
+instance Enum BId where
+    succ (BId value) = BId $ succ value
+
+
 -- Converts a single "optimized" AST node into ASM code building action
-renderNode :: Opt.AST -> State BId Strings
+renderNode :: AST Optimized -> State BId Strings
 renderNode node =
     case node of
-        Opt.Inc rep ->
+        Inc rep ->
             return ["add byte [rsi], byte " ++ show rep]
-        Opt.Dec rep ->
+        Dec rep ->
             return ["sub byte [rsi], byte " ++ show rep]
-        Opt.GoRight rep ->
+        GoRight rep ->
             return ["add rsi, " ++ show rep]
-        Opt.GoLeft  rep ->
+        GoLeft  rep ->
             return ["sub rsi, " ++ show rep]
-        Opt.Output  rep ->
+        Output  rep ->
             return $
             concat
                 [
                     [ "mov rax, 1", "syscall" ] | counter <- [1..rep]
                 ]
-        Opt.Input  rep ->
+        Input  rep ->
             return $
             concat [
                 [
@@ -53,7 +53,7 @@ renderNode node =
                     "mov rdi, 1"
                 ] | counter <- [1..rep]
             ]
-        Opt.Mul shift0 shift1 mul0 mul1 ->
+        Mul shift0 shift1 mul0 mul1 ->
             return $
             let header = [";;; Starting Mul block" ] in
             let footer = [";;; Ending Mul block" ] in
@@ -76,68 +76,68 @@ renderNode node =
                     [
                         "add byte [rsi+" ++ show shift ++"], al"
                     ]
-        Opt.Add value ->
+        Add value ->
             do
                 -- call the 'next' function
                 current_id <- get
-                put $ nextContid current_id
+                put $ succ current_id
                 -- end of 'next' invocation
-                return $ renderSubAdd value current_id Add
-        Opt.Sub value ->
+                return $ renderSubAdd value current_id OpAdd
+        Sub value ->
             do
                 -- call the 'next' function
                 current_id <- get
-                put $ nextContid current_id
+                put $ succ current_id
                 -- end of 'next' invocation
-                return $ renderSubAdd value current_id Sub
-        Opt.Drop ->
+                return $ renderSubAdd value current_id OpSub
+        Drop ->
             return
             [
                 "mov byte [rsi], byte 0"
             ]
-        Opt.Loop nodes ->
+        Loop nodes ->
             do
                 -- call the 'next' function twice
-                this_id <- get
-                put $ nextContid this_id
-                cont_id <- get
-                put $ nextContid cont_id
+                thisId <- get
+                put $ succ thisId
+                contId <- get
+                put $ succ contId
                 -- end of 'next' invocations
                 innerNodesCode <- mapM renderNode nodes
                 return $
-                  initLoop this_id cont_id ++ -- loop initialization code
+                  initLoop thisId contId ++ -- loop initialization code
                   concat innerNodesCode    ++ -- code for the loop body itself
-                  loopBack this_id cont_id    -- loop back code
+                  loopBack thisId contId    -- loop back code
             where
-                initLoop this_id cont_id = [
-                    show this_id ++ ":",
+                initLoop thisId contId = [
+                    show thisId ++ ":",
                     "cmp byte [rsi], byte 0",
-                    "je " ++ show cont_id
+                    "je " ++ show contId
                     ]
-                loopBack this_id cont_id = [
-                    "jmp " ++ show this_id,
-                    show cont_id ++ ":"
+                loopBack thisId contId = [
+                    "jmp " ++ show thisId,
+                    show contId ++ ":"
                     ]
                 jump target_id = ["jmp " ++ show target_id ]
     where
         renderSubAdd :: Int -> BId -> Op -> Strings
-        renderSubAdd value cont_id op =
-            let opRepr = if op == Add then "add" else "sub" in
+        renderSubAdd value contId op =
+            let opRepr = if op == OpAdd then "add" else "sub" in
             let header = [";;; Starting Add block"] in
             let footer = [";;; Ending Add block"] in
                 header ++
                 [
                     "cmp byte [rsi], byte 0",
-                    "je .skip" ++ show cont_id,
+                    "je .skip" ++ show contId,
                     "movzx r11, byte [rsi]",
                     "mov byte [rsi], byte 0",
                     opRepr ++ " byte [rsi+(" ++ show value ++ ")], r11b",
-                    ".skip" ++ show cont_id
+                    ".skip" ++ show contId
                 ] ++
                 footer
 
 
-renderProgram :: [Opt.AST] -> Strings
+renderProgram :: [AST Optimized] -> Strings
 renderProgram nodes = 
     let code = concat $ evalState (mapM renderNode nodes) (BId 1) in
         code ++ ["jmp exit"]

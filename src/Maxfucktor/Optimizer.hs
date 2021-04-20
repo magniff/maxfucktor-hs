@@ -1,43 +1,47 @@
 {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
 
-
 module Maxfucktor.Optimizer where
 
 
-import qualified Maxfucktor.Parser as P
+import Maxfucktor.AST
+  ( AST
+      ( Add,
+        Dec,
+        Drop,
+        GoLeft,
+        GoRight,
+        Inc,
+        Input,
+        Loop,
+        Mul,
+        Output,
+        Sub
+      ),
+    Optimized,
+    UnOptimized,
+  )
 
 
-data AST = 
-    Inc     Int
-  | Dec     Int
-  | GoLeft  Int
-  | GoRight Int
-  | Input   Int
-  | Output  Int
-  | Loop    [AST]
-  | Drop
-  | Add     Int
-  | Sub     Int
-  | Mul     {shift0::Int, shift1::Int, mul0::Int, mul1::Int}
-  deriving (Show, Eq)
-
-
-optimize :: P.AST -> AST
-optimize astnode = 
-    case astnode of
-        P.Loop [P.Dec 1, P.GoRight s0, P.Inc 1, P.GoLeft s1] | s0 == s1 -> Add s0
-        P.Loop [P.Dec 1, P.GoLeft s0, P.Inc 1, P.GoRight s1] | s0 == s1 -> Add (-s0)
-        P.Loop [P.Dec 1, P.GoRight s0, P.Dec 1, P.GoLeft s1] | s0 == s1 -> Sub s0
-        P.Loop [P.Dec 1, P.GoLeft s0, P.Dec 1, P.GoRight s1] | s0 == s1 -> Sub (-s0)
-        P.Loop
-            [P.Dec 1, P.GoRight p0, P.Inc p1, P.GoRight p2, P.Inc p3, P.GoLeft p4]
-            | p0 + p2 == p4 ->
-            Mul p0 (p0+p2) p1 p3
-        P.Loop [P.Dec value] | value > 0 -> Drop
-        P.Loop contents -> Loop $ map optimize contents
-        P.Inc     value -> Inc value
-        P.Dec     value -> Dec value
-        P.GoLeft  value -> GoLeft value
-        P.GoRight value -> GoRight value
-        P.Input   value -> Input value
-        P.Output  value -> Output value
+optimize :: AST UnOptimized -> AST Optimized
+optimize astnode =
+  case astnode of
+    Loop [Dec 1, GoRight s0, Inc 1, GoLeft s1] | s0 == s1 -> Add s0
+    Loop [Dec 1, GoLeft s0, Inc 1, GoRight s1] | s0 == s1 -> Add (- s0)
+    Loop [Dec 1, GoRight s0, Dec 1, GoLeft s1] | s0 == s1 -> Sub s0
+    Loop [Dec 1, GoLeft s0, Dec 1, GoRight s1] | s0 == s1 -> Sub (- s0)
+    Loop
+      [Dec 1, GoRight p0, Inc p1, GoRight p2, Inc p3, GoLeft p4]
+        | p0 + p2 == p4 ->
+          Mul p0 (p0 + p2) p1 p3
+    Loop [Dec value] | value > 0 -> Drop
+    Loop contents -> Loop $ map optimize contents
+    Inc value -> Inc value
+    Dec value -> Dec value
+    GoLeft value -> GoLeft value
+    GoRight value -> GoRight value
+    Input value -> Input value
+    Output value -> Output value
+    Mul a b c d -> Mul a b c d
+    Sub a -> Sub a
+    Add a -> Add a
+    Drop -> Drop
