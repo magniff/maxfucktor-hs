@@ -13,20 +13,20 @@ data Op = Add | Sub deriving (Eq, Show)
 
 
 -- This type is used to enumerate lables in resulting ASM code
-newtype BlockId = BlockId Int deriving Eq
+newtype BId = BId Int deriving Eq
 
 
--- It might be a good idea to implement the "Enum BlockId" instead of this
-nextContid :: BlockId -> BlockId
-nextContid (BlockId value) = BlockId $ value + 1
+-- It might be a good idea to implement the "Enum BId" instead of this
+nextContid :: BId -> BId
+nextContid (BId value) = BId $ value + 1
 
 
-instance Show BlockId where
-    show (BlockId value) = "l" ++ show value 
+instance Show BId where
+    show (BId value) = "l" ++ show value 
 
 
 -- Converts a single "optimized" AST node into ASM code building action
-renderNode :: Opt.AST -> State BlockId Strings
+renderNode :: Opt.AST -> State BId Strings
 renderNode node =
     case node of
         Opt.Inc rep ->
@@ -120,7 +120,7 @@ renderNode node =
                     ]
                 jump target_id = ["jmp " ++ show target_id ]
     where
-        renderSubAdd :: Int -> BlockId -> Op -> Strings
+        renderSubAdd :: Int -> BId -> Op -> Strings
         renderSubAdd value cont_id op =
             let opRepr = if op == Add then "add" else "sub" in
             let header = [";;; Starting Add block"] in
@@ -139,5 +139,5 @@ renderNode node =
 
 renderProgram :: [Opt.AST] -> Strings
 renderProgram nodes = 
-    let code = concat $ evalState (mapM renderNode nodes) (BlockId 1) in
+    let code = concat $ evalState (mapM renderNode nodes) (BId 1) in
         code ++ ["jmp exit"]

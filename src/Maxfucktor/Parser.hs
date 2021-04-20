@@ -8,6 +8,9 @@ import Control.Applicative ( Alternative(some, many, (<|>)) )
 import Data.Maybe ( isJust )
 
 
+type Predicate a = a -> Bool
+
+
 data AST = 
     Inc     Int
   | Dec     Int
@@ -46,10 +49,6 @@ instance Applicative (Parser input) where
           )
 
 
-punit :: Parser Char ()
-punit = return ()
-
-
 instance Monad (Parser input) where
   pa >>= f =
     Parser $ \input ->
@@ -68,7 +67,7 @@ instance Alternative (Parser input) where
           Nothing -> runParser p1 input
 
 
-predicate :: (a -> Bool) -> Parser a a
+predicate :: Predicate a -> Parser a a
 predicate f = 
   Parser $ \input ->
     let fail = (Nothing, input) in
